@@ -15,7 +15,7 @@ depends_on = None
 
 
 def upgrade():
-    op.execute("CREATE VIEW users_active AS SELECT * FROM USERS WHERE created_at > NOW() - INTERVAL '180 days';")
+    op.execute("CREATE VIEW users_active AS SELECT id, cpf, email, name, phone FROM USERS WHERE created_at > NOW() - INTERVAL '180 days';")
 
 
 def downgrade():

@@ -1,9 +1,12 @@
 from dotenv import load_dotenv; load_dotenv()
+import uvicorn
+from resources.users_active.user_active_routes import user_active_router
 from starlette.middleware.cors import CORSMiddleware
 from fastapi import FastAPI
 from resources.users.user_routes import user_router
-from db import async_engine, Base
-import uvicorn
+from db import async_engine
+from alembic import command, config
+
 
 app = FastAPI()
 
@@ -17,12 +20,18 @@ app.add_middleware(
 
 
 app.include_router(user_router)
+app.include_router(user_active_router)
+
+
+def run_upgrade(connection, cfg):
+    cfg.attributes["connection"] = connection
+    command.upgrade(cfg, "head")
 
 
 @app.on_event("startup")
-async def startup():
+async def run_async_upgrade():
     async with async_engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
+        await conn.run_sync(run_upgrade, config.Config("alembic.ini"))
 
 
 @app.get("/echo")
