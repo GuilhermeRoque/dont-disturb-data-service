@@ -1,8 +1,8 @@
 import asyncio
 from logging.config import fileConfig
-from dotenv import load_dotenv; load_dotenv(dotenv_path="./src/.env")
+from dotenv import load_dotenv; load_dotenv()
 
-from src.db import DATABASE_URL
+from db import DATABASE_URL
 
 
 from sqlalchemy import pool
