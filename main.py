@@ -1,4 +1,6 @@
 from dotenv import load_dotenv; load_dotenv()
+
+import logger
 import uvicorn
 from resources.users_active.user_active_routes import user_active_router
 from starlette.middleware.cors import CORSMiddleware
@@ -30,8 +32,11 @@ def run_upgrade(connection, cfg):
 
 @app.on_event("startup")
 async def run_async_upgrade():
+    logger.logger.info("Running migrations...")
     async with async_engine.begin() as conn:
         await conn.run_sync(run_upgrade, config.Config("alembic.ini"))
+    logger.logger.info("Finish running migrations!")
+
 
 
 @app.get("/echo")

@@ -2,10 +2,9 @@ import traceback
 from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from logger import logger
-from sqlalchemy.future import select
+from sqlalchemy import text
 
 from resources.users_active.user_active import UserActive
-from resources.users_active.user_active_entity import UserActiveEntity
 
 
 class UserActiveRepository:
@@ -14,10 +13,9 @@ class UserActiveRepository:
 
     async def get_all(self) -> list[UserActive]:
         try:
-            stmt = select(UserActiveEntity)
+            stmt = text("SELECT * from users_active")
             result = await self.session.execute(stmt)
-            users_active = [db_UserActive for db_UserActive in result.scalars().all()]
-            return users_active
+            return [UserActive(cpf=row.cpf, phone=row.phone, email=row.email, name=row.name) for row in result]
         except Exception as e:
             trace_str = traceback.format_exc()
             logger.error(f"{e}\n{trace_str}")

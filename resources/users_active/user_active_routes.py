@@ -9,6 +9,6 @@ user_active_router = APIRouter(
 )
 
 
-@user_active_router.get("/")
+@user_active_router.get("")
 async def get_users_active(async_session: AsyncSession = Depends(get_db_conn)):
     return await UserActiveUseCases.get_users_active(async_session)

@@ -8,4 +8,3 @@ class UserActive:
     cpf: str
     name: str | None = None
     phone: str | None = None
-    id: int | None = None
