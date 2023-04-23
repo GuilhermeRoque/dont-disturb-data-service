@@ -1,4 +1,6 @@
 fastapi==0.95.1
-SQLAlchemy==2.0.9
 uvicorn==0.21.1
 python-dotenv~=1.0.0
+sqlalchemy==2.0.10
+starlette~=0.26.1
+alembic==1.10.3

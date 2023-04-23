@@ -6,7 +6,6 @@ from db import async_engine, Base
 import uvicorn
 
 app = FastAPI()
-app.include_router(user_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -17,10 +16,18 @@ app.add_middleware(
 )
 
 
+app.include_router(user_router)
+
+
 @app.on_event("startup")
 async def startup():
     async with async_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+
+@app.get("/echo")
+async def echo():
+    return {"message": "Hello World"}
 
 
 if __name__ == "__main__":
