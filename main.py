@@ -1,8 +1,8 @@
 from dotenv import load_dotenv; load_dotenv()
 
+from resources.mail_cleanup.mail_cleanup_routes import mail_cleanup_router
 from starlette.responses import JSONResponse
 import http
-import traceback
 from resources.utils.use_cases_execeptions import UseCasesExceptions
 from fastapi import Request
 from logger import default_logger
@@ -26,7 +26,7 @@ app.add_middleware(
 
 app.include_router(user_router)
 app.include_router(user_active_router)
-
+app.include_router(mail_cleanup_router)
 
 @app.exception_handler(UseCasesExceptions)
 async def handle_use_case_exception(request: Request, e: UseCasesExceptions):

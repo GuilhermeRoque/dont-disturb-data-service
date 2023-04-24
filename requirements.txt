@@ -4,3 +4,5 @@ python-dotenv~=1.0.0
 sqlalchemy==2.0.10
 starlette~=0.26.1
 alembic==1.10.3
+pandas~=2.0.0
+numpy~=1.24.3

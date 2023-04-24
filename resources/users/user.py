@@ -3,13 +3,18 @@ import datetime
 
 
 @dataclasses.dataclass
-class User:
+class UserRegistered:
     email: str
     cpf: str
     provider: str
-    name: str | None = None
-    phone: str | None = None
-    id: int | None = None
-    created_at: datetime.datetime | None = None
+    name: str
+    id: int
+    created_at: datetime.datetime
 
 
+@dataclasses.dataclass
+class UserRequestPayload:
+    email: str
+    cpf: str
+    provider: str
+    name: str
