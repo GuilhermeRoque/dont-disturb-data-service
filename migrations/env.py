@@ -1,5 +1,4 @@
 import asyncio
-from logging.config import fileConfig
 from dotenv import load_dotenv; load_dotenv()
 
 from db import DATABASE_URL

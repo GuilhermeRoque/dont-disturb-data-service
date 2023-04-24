@@ -1,3 +1,3 @@
 import logging
 
-logger = logging.getLogger("uvicorn")
+default_logger = logging.getLogger("uvicorn")

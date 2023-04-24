@@ -11,3 +11,5 @@ class User:
     phone: str | None = None
     id: int | None = None
     created_at: datetime.datetime | None = None
+
+

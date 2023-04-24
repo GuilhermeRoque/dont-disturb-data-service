@@ -1,9 +1,10 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from resources.utils.use_cases_execeptions import UseCasesExceptions
 from db import get_db_conn
 from resources.users.user import User
 from resources.users.user_use_cases import UserUseCases
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 
 user_router = APIRouter(
     prefix="/users"

@@ -1,69 +1,85 @@
-import datetime
-import traceback
-from fastapi import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from logger import logger
+from logger import default_logger
 from resources.users.user import User
-from resources.users.user_entity import UserEntity
-from sqlalchemy.future import select
+from sqlalchemy import text
 
 
 class UserRepository:
-    def __init__(self, session: AsyncSession):
-        self.session = session
+    @classmethod
+    async def create(cls, user: User, session: AsyncSession) -> User:
+        stmt = text("INSERT INTO users (email, cpf, provider, name, phone) VALUES (:email, :cpf, :provider, :name, :phone) RETURNING users.id, users.created_at")
+        result = await session.execute(stmt, user.__dict__)
+        first_result = result.first()
+        user.id = first_result.id
+        user.created_at = first_result.created_at
+        return user
 
-    async def create(self, user: User) -> User:
-        try:
-            db_user = UserEntity.from_domain(user)
-            self.session.add(db_user)
-            await self.session.commit()
-            await self.session.refresh(db_user)
-            return db_user.to_domain()
-        except Exception:
-            await self.session.rollback()
-            raise HTTPException(status_code=400, detail="User already exists")
+    @classmethod
+    async def get_all(cls, session: AsyncSession) -> list[User]:
+        stmt = text("SELECT * from users")
+        result = await session.execute(stmt)
+        return [
+            User(
+                cpf=row.cpf,
+                phone=row.phone,
+                email=row.email,
+                name=row.name,
+                provider=row.provider,
+                created_at=row.created_at,
+                id=row.id,
+            ) for row in result
+        ]
 
-    async def get_all(self) -> list[User]:
-        try:
-            stmt = select(UserEntity)
-            result = await self.session.execute(stmt)
-            users = [db_user for db_user in result.scalars().all()]
-            return users
-        except Exception as e:
-            trace_str = traceback.format_exc()
-            logger.error(f"{e}\n{trace_str}")
-            await self.session.rollback()
-            raise HTTPException(status_code=500, detail="Internal error")
+    @classmethod
+    async def get_by_id(cls, user_id: int, session: AsyncSession) -> User:
+        stmt = text("SELECT * from users WHERE id = :id")
+        result = await session.execute(stmt, {"id": user_id})
+        row = result.first()
+        if not row:
+            raise IndexError("Register don't exists")
+        return User(
+            cpf=row.cpf,
+            phone=row.phone,
+            email=row.email,
+            name=row.name,
+            provider=row.provider,
+            created_at=row.created_at,
+            id=row.id,
+        )
 
-    async def create_many(self, users: list[User]):
-        try:
-            db_users = [UserEntity.from_domain(user=user) for user in users]
-            self.session.add_all(db_users)
-            await self.session.commit()
-        except Exception:
-            await self.session.rollback()
-            raise HTTPException(status_code=400, detail="One or more users already exist")
+    @classmethod
+    async def check_exists_email(cls, email: str, session: AsyncSession) -> bool:
+        stmt = text("SELECT email FROM users WHERE email = :email")
+        result = await session.execute(stmt, {"email": email})
+        row = result.first()
+        return row is not None
 
-    async def update(self, user: User) -> User:
-        try:
-            db_user = self.session.query(UserEntity).filter(UserEntity.id == user.id).first()
-            if db_user is None:
-                raise HTTPException(status_code=404, detail=f"User with id {user.id} not found")
-            db_user.name = user.name
-            db_user.email = user.email
-            await self.session.commit()
-            return db_user.to_domain()
-        except Exception:
-            await self.session.rollback()
-            raise HTTPException(status_code=400, detail="User already exists")
+    @classmethod
+    async def check_exists_cpf(cls, cpf: str, session: AsyncSession) -> bool:
+        stmt = text("SELECT cpf FROM users WHERE cpf = :cpf")
+        result = await session.execute(stmt, {"cpf": cpf})
+        row = result.first()
+        return row is not None
 
-    async def delete(self, user_id: int):
-        try:
-            db_user = self.session.query(UserEntity).filter(UserEntity.id == user_id).first()
-            if db_user is None:
-                raise HTTPException(status_code=404, detail=f"User with id {user_id} not found")
-            await self.session.delete(db_user)
-            await self.session.commit()
-        except Exception:
-            await self.session.rollback()
-            raise HTTPException(status_code=400, detail="User could not be deleted")
+    @classmethod
+    async def check_exists_email_batch(cls, email_list: list[str], session: AsyncSession) -> list[str]:
+        stmt = text("SELECT email FROM users WHERE email IN :email")
+        result = await session.execute(stmt, {"email": email_list})
+        return [row.email for row in result]
+
+    @classmethod
+    async def check_exists_cpf_batch(cls, cpf_list: list[str], session: AsyncSession) -> list[str]:
+        stmt = text("SELECT cpf FROM users WHERE cpf IN :cpf")
+        result = await session.execute(stmt, {"cpf": cpf_list})
+        return [row.cpf for row in result]
+
+    @classmethod
+    async def create_many(cls, users: list[User], session: AsyncSession):
+        users_created = [await cls.create(user=user, session=session) for user in users]
+        return users_created
+
+    @classmethod
+    async def delete(cls, user_id: int, session: AsyncSession):
+        stmt = text("DELETE FROM users WHERE id = :id")
+        result = await session.execute(stmt, {'id': user_id})
+        default_logger.info(result.first())

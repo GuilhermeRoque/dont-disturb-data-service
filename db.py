@@ -15,10 +15,12 @@ Base = declarative_base()
 
 
 async def get_db_conn() -> AsyncSession:
-    db = AsyncSessionFactory()
+    session = AsyncSessionFactory()
     try:
-        yield db
+        await session.begin()
+        yield session
     finally:
-        await db.close()
+        await session.commit()
+        await session.close()
 
 
