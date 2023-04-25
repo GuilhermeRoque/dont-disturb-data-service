@@ -1,0 +1,52 @@
+version: '3'
+
+services:
+
+#  front-end:
+#    build:
+#      context: ./../front-end
+#      dockerfile: ./../front-end/Dockerfile
+#    image: guilhermeroque/front-end
+#    ports:
+#     - "8080:8080"
+#    deploy:
+#      mode: replicated
+#      replicas: 1
+#    depends_on:
+#      - broker
+#    volumes:
+#      - ./../front-end/cmd/web/templates:/app/cmd/web/templates
+
+  dont-disturb-service:
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    image: guilhermeroque/dont-disturb-service
+    ports:
+     - "5000:5000"
+    environment:
+      DB_USER: postgres
+      DB_PASSWORD: password
+      DB_DATABASE: users
+      DB_HOST: postgres
+      DB_PORT: 5432
+    deploy:
+      mode: replicated
+      replicas: 1
+    depends_on:
+      - postgres
+
+
+  postgres:
+    image: "postgres:15.2-alpine"
+    ports:
+      - "5432:5432"
+    deploy:
+      mode: replicated
+      replicas: 1
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: users
+    volumes:
+      - ./db-data/postgres/:/var/lib/postgresql/data/

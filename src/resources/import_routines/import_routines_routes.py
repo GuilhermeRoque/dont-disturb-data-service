@@ -18,6 +18,6 @@ async def cleanup(file: UploadFile, async_session: AsyncSession = Depends(get_db
 
 
 @mail_cleanup_router.post("/update")
-async def update_phones(file: UploadFile, async_session: AsyncSession = Depends(get_db_conn)) -> list[PhoneRegistered]:
+async def update_phones(file: UploadFile, async_session: AsyncSession = Depends(get_db_conn)) -> list[ImportReportUpdated]:
     file_binary = await file.read()
     return await MailCleanupUseCases.update_by_phones(file_binary=file_binary, async_session=async_session)

@@ -4,17 +4,17 @@ import datetime
 
 @dataclasses.dataclass
 class UserRegistered:
-    email: str
-    cpf: str
-    provider: str
-    name: str
     id: int
+    cpf: str
     created_at: datetime.datetime
+    email: str | None = None
+    provider: str | None = None
+    name: str | None = None
 
 
 @dataclasses.dataclass
 class UserRequestPayload:
-    email: str
     cpf: str
-    provider: str
-    name: str
+    email: str | None = None
+    provider: str | None = None
+    name: str | None = None

@@ -7,6 +7,10 @@ class UseCasesExceptions(Exception, abc.ABC):
     def get_message(self) -> str:
         pass
 
+    @abc.abstractmethod
+    def get_values(self) -> list | dict:
+        pass
+
     @staticmethod
     @abc.abstractmethod
     def get_error_code() -> http.HTTPStatus:
@@ -25,7 +29,7 @@ class AlreadyExistsException(UseCaseBadRequestException):
     Raised when the unique constraint of a database table is violated
     """
 
-    def __init__(self, unique_fields: tuple = None, duplicated_values: dict = None):
+    def __init__(self, unique_fields: tuple = None, duplicated_values: list = None):
         self.unique_fields = unique_fields
         self.duplicated_values = duplicated_values
 
@@ -39,13 +43,16 @@ class AlreadyExistsException(UseCaseBadRequestException):
 
         return f"Already exists record with this configuration.{unique_fields_msg}{duplicated_values_msg}"
 
+    def get_values(self) -> list | dict:
+        return self.duplicated_values.copy()
+
 
 class DuplicatedValuesException(UseCaseBadRequestException):
     """
     Raised in batch requests when there is duplicated data
     """
 
-    def __init__(self, unique_fields: tuple = None, duplicated_values: dict = None):
+    def __init__(self, unique_fields: tuple = None, duplicated_values: list = None):
         self.unique_fields = unique_fields
         self.duplicated_values = duplicated_values
 
@@ -59,6 +66,9 @@ class DuplicatedValuesException(UseCaseBadRequestException):
 
         return f"There is duplicated data in the request.{unique_fields_msg}{duplicated_values_msg}"
 
+    def get_values(self) -> list | dict:
+        return self.duplicated_values.copy()
+
 
 class ParseFileException(UseCaseBadRequestException):
     """
@@ -71,19 +81,23 @@ class ParseFileException(UseCaseBadRequestException):
     def get_message(self) -> str:
         return f"Was not possible to parse the file. Please check if the provided file is a {self.format_expected} file"
 
+    def get_values(self) -> list | dict:
+        return []
 
 class DataFrameRowsValidationException(UseCaseBadRequestException):
     """
     Raised on dataframe rows validation when values differs from expected
     """
 
-    def __init__(self, message: str, indexes_errors: dict):
+    def __init__(self, message: str, indexes_errors: list):
         self.message = message
         self.indexes_errors = indexes_errors
 
     def get_message(self) -> str:
         return f"Validation error. {self.message}. Fix the following values at indexes: {self.indexes_errors}"
 
+    def get_values(self) -> list | dict:
+        return self.indexes_errors.copy()
 
 class DataFrameColumnsValidationException(UseCaseBadRequestException):
     """
@@ -95,3 +109,6 @@ class DataFrameColumnsValidationException(UseCaseBadRequestException):
 
     def get_message(self) -> str:
         return f"Validation error. {self.message}."
+
+    def get_values(self) -> list | dict:
+        return []

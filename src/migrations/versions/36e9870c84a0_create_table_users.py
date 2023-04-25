@@ -18,7 +18,7 @@ def upgrade():
     CREATE TABLE users (
         id SERIAL PRIMARY KEY,
 	    cpf VARCHAR (45) NOT NULL UNIQUE,
-	    email VARCHAR (255) NOT NULL UNIQUE,
+	    email VARCHAR (255) UNIQUE,
 	    name VARCHAR (255),
 	    provider VARCHAR (255),
         created_at TIMESTAMP DEFAULT NOW()

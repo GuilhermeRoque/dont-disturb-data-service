@@ -28,11 +28,15 @@ app.include_router(user_router)
 app.include_router(user_active_router)
 app.include_router(mail_cleanup_router)
 
+
 @app.exception_handler(UseCasesExceptions)
 async def handle_use_case_exception(request: Request, e: UseCasesExceptions):
     return JSONResponse(
         status_code=e.get_error_code(),
-        content={"message": e.get_message()},
+        content={
+            "message": e.get_message(),
+            "values": e.get_values()
+        },
     )
 
 

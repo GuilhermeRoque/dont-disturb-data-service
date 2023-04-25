@@ -3,13 +3,15 @@ import io
 import pandas as pd
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from logger import default_logger
 from resources.phones.phone import PhoneRequestPayload, PhoneRegistered
 from resources.phones.phone_repository import PhonesRepository
+from resources.users.user import UserRequestPayload
 from resources.users.user_repository import UserRepository
 from resources.users_active.user_active_repository import UserActiveRepository
 from resources.utils.regex_common import CPF_REGEX, PHONE_REGEX
 from resources.utils.use_cases_execeptions import ParseFileException, DataFrameColumnsValidationException, \
-    DataFrameRowsValidationException
+    DataFrameRowsValidationException, DuplicatedValuesException
 import numpy
 
 
@@ -55,27 +57,47 @@ class MailCleanupUseCases:
                                async_session: AsyncSession,
                                phones_repository=PhonesRepository,
                                user_repository=UserRepository,
-                               ) -> list[PhoneRegistered]:
+                               ) -> list[ImportReportUpdated]:
 
         df = cls._get_csv_from_file(file_binary)
         cls._validate_dataframe(df=df)
         phone_rows = ("phone1", "phone2", "phone3", "phone4", "phone5")
         df.columns = ("cpf", *phone_rows)
         all_phones = pd.Series(numpy.concatenate(df.set_index('cpf').values))
-        all_phones = all_phones[all_phones.notna()].tolist()
+        all_phones = all_phones[all_phones.notna()].copy()
+
+        phones_duplicated = all_phones[all_phones.duplicated()].copy()
+        if len(phones_duplicated):
+            raise DuplicatedValuesException(unique_fields=('phone', ), duplicated_values=phones_duplicated.tolist())
+
+        all_phones = all_phones.tolist()
         await phones_repository.delete_phones(phones=all_phones, async_session=async_session)
+
         cpf_id_data = await user_repository.get_all_in_cpf(session=async_session, cpf_list=df['cpf'])
-        if not cpf_id_data:
-            return []
+        if len(cpf_id_data):
+            df_cpf = pd.DataFrame(cpf_id_data)
+            df_not_registered = df[~df['cpf'].isin(df_cpf['cpf'])].copy()
+            users_to_register = [UserRequestPayload(cpf=cpf) for cpf in df_not_registered['cpf'].tolist()]
+            await user_repository.create_many(users=users_to_register, session=async_session)
+        else:
+            users_to_register = [UserRequestPayload(cpf=cpf) for cpf in df['cpf'].tolist()]
+            await user_repository.create_many(users=users_to_register, session=async_session)
+
+        cpf_id_data = await user_repository.get_all_in_cpf(session=async_session, cpf_list=df['cpf'])
         df_cpf = pd.DataFrame(cpf_id_data)
+
         df = pd.merge(df, df_cpf, on='cpf')
+
         phone_created_list = []
         for data_to_register in df.to_dict(orient='records'):
             for phone_row in phone_rows:
-                phone_to_request = PhoneRequestPayload(phone=data_to_register[phone_row],
+                phone_number = data_to_register[phone_row]
+                if pd.isnull(phone_number):
+                    continue
+                phone_to_request = PhoneRequestPayload(phone=phone_number,
                                                        id_user=data_to_register['id'])
                 phone_created = await phones_repository.create(phone=phone_to_request, session=async_session)
-                phone_created_list.append(phone_created)
+                phone_created_list.append(ImportReportUpdated(phone=phone_created.phone, cpf=data_to_register['cpf']))
 
         await async_session.commit()
         return phone_created_list

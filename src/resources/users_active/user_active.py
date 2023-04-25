@@ -3,7 +3,7 @@ import dataclasses
 
 @dataclasses.dataclass
 class UserActive:
-    email: str
     cpf: str
-    name: str
-    phone: str
+    email: str | None = None
+    name: str | None = None
+    phone: str | None = None
