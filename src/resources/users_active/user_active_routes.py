@@ -16,5 +16,5 @@ async def get_users_active(cpf: str = None,
                            phone: str = None,
                            async_session: AsyncSession = Depends(get_db_conn)) -> list[UserActive]:
     filters = {'cpf': cpf, 'email': email, 'phone': phone}
-    filters = {k: v for k, v in filters.items() if v is not None}
+    filters = {k: v for k, v in filters.items() if v}
     return await UserActiveUseCases.get_users_active(async_session=async_session, filters=filters)
