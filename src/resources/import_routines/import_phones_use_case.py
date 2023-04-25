@@ -1,16 +1,14 @@
 import dataclasses
-import io
 import pandas as pd
 from sqlalchemy.ext.asyncio import AsyncSession
-
-from logger import default_logger
-from resources.phones.phone import PhoneRequestPayload, PhoneRegistered
+from resources.phones.phone import PhoneRequestPayload
 from resources.phones.phone_repository import PhonesRepository
 from resources.users.user import UserRequestPayload
 from resources.users.user_repository import UserRepository
 from resources.users_active.user_active_repository import UserActiveRepository
+from resources.utils.import_csv import check_regex, get_csv_from_file
 from resources.utils.regex_common import CPF_REGEX, PHONE_REGEX
-from resources.utils.use_cases_execeptions import ParseFileException, DataFrameColumnsValidationException, \
+from resources.utils.use_cases_execeptions import DataFrameColumnsValidationException, \
     DataFrameRowsValidationException, DuplicatedValuesException
 import numpy
 
@@ -21,7 +19,7 @@ class ImportReportUpdated:
     phone: str
 
 
-class MailCleanupUseCases:
+class ImportPhonesUseCases:
 
     @classmethod
     async def cleanup_by_phones(cls,
@@ -31,7 +29,7 @@ class MailCleanupUseCases:
                                 phones_repository=PhonesRepository
                                 ) -> list[ImportReportUpdated]:
 
-        df = cls._get_csv_from_file(file_binary)
+        df = get_csv_from_file(file_binary)
         cls._validate_dataframe(df=df)
         phone_rows = ("phone1", "phone2", "phone3", "phone4", "phone5")
         df.columns = ("cpf", *phone_rows)
@@ -49,7 +47,8 @@ class MailCleanupUseCases:
 
         await async_session.commit()
 
-        return [ImportReportUpdated(phone=phone_result['phone'], cpf=phone_result['cpf']) for phone_result in phones_to_remove_cpf]
+        return [ImportReportUpdated(phone=phone_result['phone'], cpf=phone_result['cpf']) for phone_result in
+                phones_to_remove_cpf]
 
     @classmethod
     async def update_by_phones(cls,
@@ -59,7 +58,7 @@ class MailCleanupUseCases:
                                user_repository=UserRepository,
                                ) -> list[ImportReportUpdated]:
 
-        df = cls._get_csv_from_file(file_binary)
+        df = get_csv_from_file(file_binary)
         cls._validate_dataframe(df=df)
         phone_rows = ("phone1", "phone2", "phone3", "phone4", "phone5")
         df.columns = ("cpf", *phone_rows)
@@ -68,7 +67,7 @@ class MailCleanupUseCases:
 
         phones_duplicated = all_phones[all_phones.duplicated()].copy()
         if len(phones_duplicated):
-            raise DuplicatedValuesException(unique_fields=('phone', ), duplicated_values=phones_duplicated.tolist())
+            raise DuplicatedValuesException(unique_fields=('phone',), duplicated_values=phones_duplicated.tolist())
 
         all_phones = all_phones.tolist()
         await phones_repository.delete_phones(phones=all_phones, async_session=async_session)
@@ -130,7 +129,7 @@ class MailCleanupUseCases:
         df = df.apply(lambda x: x.astype(str))
 
         cpf_column = df[0]
-        cpf_errors = cls._check_regex(cpf_column, CPF_REGEX)
+        cpf_errors = check_regex(cpf_column, CPF_REGEX)
         if len(cpf_errors):
             raise DataFrameRowsValidationException(
                 message="It's expected to have CPFs with only numbers in the first column",
@@ -138,23 +137,8 @@ class MailCleanupUseCases:
         for i in range(1, 6):
             phone_column = df[i].copy()
             phone_column = phone_column[phone_column != 'nan'].copy()
-            phone_errors = cls._check_regex(phone_column, PHONE_REGEX)
+            phone_errors = check_regex(phone_column, PHONE_REGEX)
             if len(phone_errors):
                 raise DataFrameRowsValidationException(
                     message=f"It's expected to have phones with format 'DDD+Number' with only numbers in the {i + 1}º column",
                     indexes_errors=phone_errors)
-
-    @classmethod
-    def _get_csv_from_file(cls, file: bytes) -> pd.DataFrame:
-        try:
-            buffer = io.BytesIO(file)
-            df = pd.read_csv(buffer, header=None, dtype={i: object for i in range(0, 6)})
-        except Exception:
-            raise ParseFileException(format_expected="csv")
-        return df
-
-    @classmethod
-    def _check_regex(cls, column: pd.Series, regex: str) -> dict:
-        match_regex = column.str.contains(regex)
-        errors = column[~match_regex].to_dict()
-        return errors

@@ -89,7 +89,7 @@ class DataFrameRowsValidationException(UseCaseBadRequestException):
     Raised on dataframe rows validation when values differs from expected
     """
 
-    def __init__(self, message: str, indexes_errors: list):
+    def __init__(self, message: str, indexes_errors: dict):
         self.message = message
         self.indexes_errors = indexes_errors
 

@@ -1,23 +1,28 @@
-import dataclasses
-
 from sqlalchemy.ext.asyncio import AsyncSession
 from db import get_db_conn
 from fastapi import APIRouter, Depends, UploadFile
-from resources.import_routines.import_routines_use_case import MailCleanupUseCases, ImportReportUpdated
-from resources.phones.phone import PhoneRegistered
+from resources.import_routines.import_phones_use_case import ImportPhonesUseCases, ImportReportUpdated
+from resources.import_routines.import_users_use_case import ImportUsersUseCase
+from resources.users.user import UserRegistered
 
 mail_cleanup_router = APIRouter(
     prefix="/import-routines"
 )
 
 
-@mail_cleanup_router.post("/cleanup")
+@mail_cleanup_router.post("/cleanup-phones")
 async def cleanup(file: UploadFile, async_session: AsyncSession = Depends(get_db_conn)) -> list[ImportReportUpdated]:
     file_binary = await file.read()
-    return await MailCleanupUseCases.cleanup_by_phones(file_binary=file_binary, async_session=async_session)
+    return await ImportPhonesUseCases.cleanup_by_phones(file_binary=file_binary, async_session=async_session)
 
 
-@mail_cleanup_router.post("/update")
+@mail_cleanup_router.post("/phones")
 async def update_phones(file: UploadFile, async_session: AsyncSession = Depends(get_db_conn)) -> list[ImportReportUpdated]:
     file_binary = await file.read()
-    return await MailCleanupUseCases.update_by_phones(file_binary=file_binary, async_session=async_session)
+    return await ImportPhonesUseCases.update_by_phones(file_binary=file_binary, async_session=async_session)
+
+
+@mail_cleanup_router.post("/users")
+async def create_users(file: UploadFile, async_session: AsyncSession = Depends(get_db_conn)) -> list[UserRegistered]:
+    file_binary = await file.read()
+    return await ImportUsersUseCase.crate_users_import(file_binary=file_binary, async_session=async_session)

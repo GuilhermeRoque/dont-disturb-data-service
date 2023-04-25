@@ -10,11 +10,11 @@ class UserRepository:
 
     @classmethod
     async def create(cls, user: UserRequestPayload, session: AsyncSession) -> UserRegistered:
-        stmt = text("INSERT INTO users (email, cpf, provider, name) VALUES (:email, :cpf, :provider, :name) RETURNING users.id, users.created_at")
+        stmt = text(
+            "INSERT INTO users (email, cpf, provider, name) VALUES (:email, :cpf, :provider, :name) RETURNING users.id, users.created_at")
         result = await session.execute(stmt, user.__dict__)
         first_result = result.first()
         default_logger.info(first_result)
-        default_logger.info("\n\n")
         user_registered = UserRegistered(
             cpf=user.cpf,
             email=user.email,
@@ -24,6 +24,13 @@ class UserRepository:
             id=first_result.id
         )
         return user_registered
+
+    @classmethod
+    async def update(cls, user: UserRegistered, session: AsyncSession) -> UserRegistered:
+        stmt = text(
+            "UPDATE users set email = :email, cpf = :cpf, provider = :provider, name = :name, created_at = :created_at WHERE id = :id")
+        await session.execute(stmt, user.__dict__)
+        return user
 
     @classmethod
     async def get_all(cls, session: AsyncSession) -> list[UserRegistered]:
@@ -55,6 +62,7 @@ class UserRepository:
                 id=row.id,
             ) for row in result
         ]
+
     @classmethod
     async def get_by_id(cls, user_id: int, session: AsyncSession) -> UserRegistered:
         stmt = text("SELECT * from users WHERE id = :id")
@@ -107,6 +115,11 @@ class UserRepository:
     async def create_many(cls, users: list[UserRequestPayload], session: AsyncSession):
         users_created = [await cls.create(user=user, session=session) for user in users]
         return users_created
+
+    @classmethod
+    async def update_many(cls, users: list[UserRegistered], session: AsyncSession) -> list[UserRegistered]:
+        users_updated = [await cls.update(user=user, session=session) for user in users]
+        return users_updated
 
     @classmethod
     async def delete(cls, user_id: int, session: AsyncSession):

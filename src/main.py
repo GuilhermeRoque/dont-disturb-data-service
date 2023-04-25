@@ -1,3 +1,5 @@
+import asyncio
+
 from dotenv import load_dotenv; load_dotenv()
 
 from resources.import_routines.import_routines_routes import mail_cleanup_router
@@ -18,10 +20,10 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-    allow_credentials=True,
+    allow_origins=[""],
+    allow_methods=[""],
+    allow_headers=[""],
+    allow_credentials=False,
 )
 
 app.include_router(user_router)
@@ -56,8 +58,15 @@ def run_upgrade(connection, cfg):
 @app.on_event("startup")
 async def run_async_upgrade():
     default_logger.info("Running migrations...")
-    async with async_engine.begin() as conn:
-        await conn.run_sync(run_upgrade, config.Config("alembic.ini"))
+    for i in range(5):
+        try:
+            async with async_engine.begin() as conn:
+                await conn.run_sync(run_upgrade, config.Config("alembic.ini"))
+        except ConnectionRefusedError as e:
+            if i == 4:
+                raise e
+            default_logger.error("Could not connect to the server. Trying again in 3 seconds..")
+            await asyncio.sleep(3)
     default_logger.info("Finish running migrations!")
 
 
