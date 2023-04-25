@@ -22,22 +22,27 @@ class ImportUsersUseCase:
         df.columns = ('cpf', 'email', 'name', 'provider', )
         cls._validate_dataframe_users(df=df)
         users_already_registered = await user_repository.get_all_in_cpf(session=async_session, cpf_list=df['cpf'])
-        df_users_already_registered = pd.DataFrame([{'cpf': user.cpf, 'id': user.id} for user in users_already_registered])
 
-        df_to_update = pd.merge(df, df_users_already_registered, on='cpf')
-        users_to_update = [
-            UserRegistered(
-                cpf=row['cpf'],
-                provider=row['provider'],
-                email=row['email'],
-                name=row['name'],
-                id=row['id'],
-                created_at=datetime.datetime.now()
-            ) for row in df_to_update.to_dict(orient='records')
-        ]
-        users_updated = await user_repository.update_many(users=users_to_update, session=async_session)
+        if len(users_already_registered):
+            df_users_already_registered = pd.DataFrame([{'cpf': user.cpf, 'id': user.id} for user in users_already_registered])
 
-        df_to_register = df[~df['cpf'].isin(df_users_already_registered['cpf'])].copy()
+            df_to_update = pd.merge(df, df_users_already_registered, on='cpf')
+            users_to_update = [
+                UserRegistered(
+                    cpf=row['cpf'],
+                    provider=row['provider'],
+                    email=row['email'],
+                    name=row['name'],
+                    id=row['id'],
+                    created_at=datetime.datetime.now()
+                ) for row in df_to_update.to_dict(orient='records')
+            ]
+            users_updated = await user_repository.update_many(users=users_to_update, session=async_session)
+
+            df_to_register = df[~df['cpf'].isin(df_users_already_registered['cpf'])].copy()
+        else:
+            df_to_register = df.copy()
+            users_updated = []
         users_to_register = [
             UserRequestPayload(
                 cpf=row['cpf'],

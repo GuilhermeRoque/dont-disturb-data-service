@@ -9,7 +9,9 @@ mail_cleanup_router = APIRouter(
     prefix="/import-routines"
 )
 
-
+@mail_cleanup_router.get("")
+async def caralho( async_session: AsyncSession = Depends(get_db_conn)):
+    return {"OLA":"OLA"}
 @mail_cleanup_router.post("/cleanup-phones")
 async def cleanup(file: UploadFile, async_session: AsyncSession = Depends(get_db_conn)) -> list[ImportReportUpdated]:
     file_binary = await file.read()
