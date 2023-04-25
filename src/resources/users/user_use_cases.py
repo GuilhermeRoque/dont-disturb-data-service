@@ -19,7 +19,9 @@ class UserUseCases:
         )
         cls.check_cpf_and_email_constraints(cpf_found, email_found, AlreadyExistsException)
 
-        return await repository.create(user=user, session=async_session)
+        result = await repository.create(user=user, session=async_session)
+        await async_session.commit()
+        return result
 
     @classmethod
     def check_cpf_and_email_constraints(cls, cpf: str | list[str], email: str | list[str], exception):
@@ -45,7 +47,9 @@ class UserUseCases:
             email_series=email_series,
             cpf_series=cpf_series
         )
-        return await repository.create_many(session=async_session, users=users)
+        result = await repository.create_many(session=async_session, users=users)
+        await async_session.commit()
+        return result
 
     @classmethod
     def check_email_or_cpf_duplicated_batch(cls, cpf_series: pd.Series, email_series: pd.Series):

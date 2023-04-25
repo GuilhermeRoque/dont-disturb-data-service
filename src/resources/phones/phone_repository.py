@@ -9,13 +9,14 @@ class PhonesRepository:
 
     @classmethod
     async def create(cls, phone: PhoneRequestPayload, session: AsyncSession) -> PhoneRegistered:
-        stmt = text("INSERT INTO phones (phone, id_user) VALUES (:phone, :id_user) RETURNING phones.id")
+        stmt = text("INSERT INTO phones (phone, id_user) VALUES (:phone, :id_user) RETURNING phones.id, phones.created_at")
         result = await session.execute(stmt, phone.__dict__)
         first_result = result.first()
         phone_registered = PhoneRegistered(
-            phone=first_result.phone,
-            id_user=first_result.id_user,
-            id=first_result.id
+            phone=phone.phone,
+            id_user=phone.id_user,
+            id=first_result.id,
+            created_at=first_result.created_at
         )
         return phone_registered
 
@@ -29,3 +30,4 @@ class PhonesRepository:
         query = f"DELETE from phones where phone IN {placeholders}"
         stmt = text(query)
         await async_session.execute(stmt, params)
+

@@ -20,7 +20,6 @@ async def get_db_conn() -> AsyncSession:
         await session.begin()
         yield session
     finally:
-        await session.commit()
         await session.close()
 
 

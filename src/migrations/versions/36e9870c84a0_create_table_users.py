@@ -28,8 +28,9 @@ def upgrade():
     op.execute("""
     CREATE TABLE phones (
         id SERIAL PRIMARY KEY,
-        phone VARCHAR(45) NOT NULL UNIQUE ,
-        id_user INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
+        phone VARCHAR(45) NOT NULL UNIQUE,
+        id_user INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT NOW()
     );
     """)
 

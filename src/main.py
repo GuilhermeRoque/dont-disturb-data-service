@@ -1,6 +1,6 @@
 from dotenv import load_dotenv; load_dotenv()
 
-from resources.mail_cleanup.mail_cleanup_routes import mail_cleanup_router
+from resources.import_routines.import_routines_routes import mail_cleanup_router
 from starlette.responses import JSONResponse
 import http
 from resources.utils.use_cases_execeptions import UseCasesExceptions
@@ -63,4 +63,4 @@ async def echo():
 
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", port=5000, log_level="info", access_log=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=5000, log_level="info", access_log=True)

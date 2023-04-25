@@ -41,6 +41,21 @@ class UserRepository:
         ]
 
     @classmethod
+    async def get_all_in_cpf(cls, session: AsyncSession, cpf_list: list[str]) -> list[UserRegistered]:
+        params, placeholder = get_sql_in_params("cpf", cpf_list)
+        stmt = text(f"SELECT * from users WHERE cpf IN {placeholder}")
+        result = await session.execute(stmt, params)
+        return [
+            UserRegistered(
+                cpf=row.cpf,
+                email=row.email,
+                name=row.name,
+                provider=row.provider,
+                created_at=row.created_at,
+                id=row.id,
+            ) for row in result
+        ]
+    @classmethod
     async def get_by_id(cls, user_id: int, session: AsyncSession) -> UserRegistered:
         stmt = text("SELECT * from users WHERE id = :id")
         result = await session.execute(stmt, {"id": user_id})

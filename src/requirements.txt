@@ -6,3 +6,5 @@ starlette~=0.26.1
 alembic==1.10.3
 pandas~=2.0.0
 numpy~=1.24.3
+python-multipart==0.0.6
+asyncpg==0.27.0

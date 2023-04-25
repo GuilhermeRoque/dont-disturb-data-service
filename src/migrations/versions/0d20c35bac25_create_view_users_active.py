@@ -15,7 +15,7 @@ depends_on = None
 
 
 def upgrade():
-    op.execute("CREATE VIEW users_active AS SELECT users.cpf, users.email, users.name, phones.phone FROM users INNER JOIN phones ON phones.id_user = users.id WHERE users.created_at > NOW() - INTERVAL '180 days';")
+    op.execute("CREATE VIEW users_active AS SELECT users.cpf, users.email, users.name, phones.phone FROM users INNER JOIN phones ON phones.id_user = users.id WHERE phones.created_at > NOW() - INTERVAL '180 days';")
 
 
 def downgrade():
